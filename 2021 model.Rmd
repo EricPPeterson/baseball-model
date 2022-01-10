@@ -24,7 +24,7 @@ team_stats <- Teams %>%
 #earned run adjustment
 earned_run_data <- Teams %>%
   filter(yearID > 2000) %>%
-  select(RA,ER)
+  select(teamID, yearID, RA,ER, E)
 
 #2021 data for building model
 TeamData2021 <- read.csv("~/GitHub/baseball model/2021TeamData.csv")
@@ -211,3 +211,15 @@ p+ geom_vline(aes(xintercept=mean(hits_per_run)),
             
 mean_hits_per_run_2021 <- mean(TeamData2021$hits_per_run)
 quantile_hits_per_run_2021 <- quantile(TeamData2021$hits_per_run)
+
+
+#earned runs analysis
+by_year <- earned_run_data %>%
+  group_by(yearID) %>%
+  summarize(yearly_avg = mean(RA/ER))
+
+p2 <- ggplot(by_year, aes(x = yearID, y = yearly_avg - 1)) + geom_line()
+p2 + ggtitle('Percentage of unearned runs by year')
+mean(by_year$yearly_avg)
+
+reg_ER <- lm(RA/ER~E, data = earned_run_data)

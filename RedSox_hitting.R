@@ -94,3 +94,41 @@ ggarrange(pDH_OBP, pDH_BA, pDH_SLG, pDH_OPS,
           labels = c("A", "B", "C", "D"),
           ncol = 2, nrow = 2)
 
+
+#graphics Alex Verdugo
+p9_OBP <- ggplot(data = Alex_Verdugo, aes(x = season, y = OBP, group = 1)) + geom_line() + 
+  labs(x = "OBP", y = "Season", 
+       title = "Alex Verdugo, OBP by Season")
+p9_BA <- ggplot(data = Alex_Verdugo, aes(x = season, y = BA, group = 1)) + geom_line() + 
+  labs(x = "BA", y = "Season", 
+       title = "Alex Verdugo, BA by Season")
+p9_SLG <- ggplot(data = Alex_Verdugo, aes(x = season, y = SLG, group = 1)) + geom_line() + 
+  labs(x = "SLG", y = "Season", 
+       title = "Alex Verdugo, SLG by Season")
+p9_OPS <- ggplot(data = Alex_Verdugo, aes(x = season, y = OPS, group = 1)) + geom_line() + 
+  labs(x = "OPS", y = "Season", 
+       title = "Alex Verdugo, OPS by Season")
+
+ggarrange(p9_OBP, p9_BA, p9_SLG, p9_OPS,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+
+
+#graphics Xander Bogaerts
+p6_OBP <- ggplot(data = Xander_Bogaerts, aes(x = season, y = OBP, group = 1)) + geom_line() + 
+  labs(x = "OBP", y = "Season", 
+       title = "Xander Bogaerts, OBP by Season")
+p6_BA <- ggplot(data = Xander_Bogaerts, aes(x = season, y = BA, group = 1)) + geom_line() + 
+  labs(x = "BA", y = "Season", 
+       title = "Xander Bogaerts, BA by Season")
+p6_SLG <- ggplot(data = Xander_Bogaerts, aes(x = season, y = SLG, group = 1)) + geom_line() + 
+  labs(x = "SLG", y = "Season", 
+       title = "Xander Bogaerts, SLG by Season")
+p6_OPS <- ggplot(data = Xander_Bogaerts, aes(x = season, y = OPS, group = 1)) + geom_line() + 
+  labs(x = "OPS", y = "Season", 
+       title = "Xander Bogaerts, OPS by Season")
+
+ggarrange(p6_OBP, p6_BA, p6_SLG, p6_OPS,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+
