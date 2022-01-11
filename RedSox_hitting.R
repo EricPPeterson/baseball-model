@@ -1,4 +1,8 @@
 #RedSox Hitting Statistics
+library(tidyverse)
+library(baseballr)
+library(baseballDB)
+library(ggpubr)
 
 stats_2021 <- daily_batter_bref('2021-03-20', '2021-10-04')
 stats_2020 <- daily_batter_bref('2020-03-20', '2020-10-04')
@@ -6,6 +10,13 @@ stats_2019 <- daily_batter_bref('2019-03-20', '2019-10-04')
 stats_2018 <- daily_batter_bref('2018-03-20', '2018-10-04')
 stats_2017 <- daily_batter_bref('2017-03-20', '2017-10-04')
 stats_total <- rbind(stats_2021, stats_2020, stats_2019, stats_2018, stats_2017)
+
+#free agent tracker
+stats_total$Team[stats_total$Name == 'Jackie Bradley Jr.'] <- 'Boston'
+stats_total$Team[stats_total$Name == 'Kike Hernandez'] <- 'Boston'
+stats_total$Team[stats_total$Name == 'Alex Verdugo'] <- 'Boston'
+
+
 
 RedSox_2021 <- stats_2021 %>%
   filter(Team == 'Boston')
@@ -98,7 +109,6 @@ ggarrange(pDH_OBP, pDH_BA, pDH_SLG, pDH_OPS,
 #graphics Alex Verdugo
 p9_OBP <- ggplot(data = Alex_Verdugo, aes(x = season, y = OBP, group = 1)) + geom_line() + 
   labs(x = "OBP", y = "Season", 
-       title = "Alex Verdugo, OBP by Season")
 p9_BA <- ggplot(data = Alex_Verdugo, aes(x = season, y = BA, group = 1)) + geom_line() + 
   labs(x = "BA", y = "Season", 
        title = "Alex Verdugo, BA by Season")
@@ -109,26 +119,50 @@ p9_OPS <- ggplot(data = Alex_Verdugo, aes(x = season, y = OPS, group = 1)) + geo
   labs(x = "OPS", y = "Season", 
        title = "Alex Verdugo, OPS by Season")
 
-ggarrange(p9_OBP, p9_BA, p9_SLG, p9_OPS,
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
+p9_AB <- ggplot(data = Alex_Verdugo, aes(x = season, y = PA/G, group = 1)) + geom_line() + 
+  labs(x = 'AB', y = 'Season',    
+       title = 'Alex Verdugo, PA/G')
+ggarrange(p9_OBP, p9_BA, p9_SLG, p9_OPS, p9_AB,
+          labels = c("A", "B", "C", "D", "E"),
+          ncol = 3, nrow = 2)
 
 
 #graphics Xander Bogaerts
 p6_OBP <- ggplot(data = Xander_Bogaerts, aes(x = season, y = OBP, group = 1)) + geom_line() + 
   labs(x = "OBP", y = "Season", 
-       title = "Xander Bogaerts, OBP by Season")
+       title = "Xander Bogaerts, OBP")
 p6_BA <- ggplot(data = Xander_Bogaerts, aes(x = season, y = BA, group = 1)) + geom_line() + 
   labs(x = "BA", y = "Season", 
-       title = "Xander Bogaerts, BA by Season")
+       title = "Xander Bogaerts, BA")
 p6_SLG <- ggplot(data = Xander_Bogaerts, aes(x = season, y = SLG, group = 1)) + geom_line() + 
   labs(x = "SLG", y = "Season", 
-       title = "Xander Bogaerts, SLG by Season")
+       title = "Xander Bogaerts, SLG")
 p6_OPS <- ggplot(data = Xander_Bogaerts, aes(x = season, y = OPS, group = 1)) + geom_line() + 
   labs(x = "OPS", y = "Season", 
-       title = "Xander Bogaerts, OPS by Season")
+       title = "Xander Bogaerts, OPS")
+p6_AB <- ggplot(data = Xander_Bogaerts, aes(x = season, y = PA/G, group = 1)) + geom_line() + 
+  labs(x = 'AB', y = 'Season',    
+      title = 'Xander Bogaerts, PA/G')
+ggarrange(p6_OBP, p6_BA, p6_SLG, p6_OPS, p6_AB,
+          labels = c("A", "B", "C", "D", "E"),
+          ncol = 3, nrow = 2)
 
-ggarrange(p6_OBP, p6_BA, p6_SLG, p6_OPS,
-          labels = c("A", "B", "C", "D"),
-          ncol = 2, nrow = 2)
-
+#graphics Kike Hernandez
+p8_OBP <- ggplot(data = Kike_Hernandez, aes(x = season, y = OBP, group = 1)) + geom_line() + 
+  labs(x = "OBP", y = "Season", 
+       title = "Kike Hernandez, OBP")
+p8_BA <- ggplot(data = Kike_Hernandez, aes(x = season, y = BA, group = 1)) + geom_line() + 
+  labs(x = "BA", y = "Season", 
+       title = "Kike Hernandez, BA")
+p8_SLG <- ggplot(data = Kike_Hernandez, aes(x = season, y = SLG, group = 1)) + geom_line() + 
+  labs(x = "SLG", y = "Season", 
+       title = "Kike Hernandez, SLG")
+p8_OPS <- ggplot(data = Kike_Hernandez, aes(x = season, y = OPS, group = 1)) + geom_line() + 
+  labs(x = "OPS", y = "Season", 
+       title = "Kike Hernandez, OPS")
+p8_AB <- ggplot(data = Kike_Hernandez, aes(x = season, y = PA/G, group = 1)) + geom_line() + 
+  labs(x = 'AB', y = 'Season',    
+       title = 'Kike Hernandez, PA/G')
+ggarrange(p8_OBP, p8_BA, p8_SLG, p8_OPS, p8_AB,
+          labels = c("A", "B", "C", "D", "E"),
+          ncol = 3, nrow = 2)
