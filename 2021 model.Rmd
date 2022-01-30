@@ -20,7 +20,15 @@ teams <- Teams %>%
 team_stats <- Teams %>% 
   filter(yearID >= 2018) %>%
   select(teamID, yearID, lgID, G, W, L, R, RA, AB, H, X2B, X3B, HR, BB, SO, ER, ERA, HA, HRA, BBA, SOA, HBP, SF)
-  
+
+team_stats_10 <- Teams %>% 
+  filter(yearID >= 2011) %>%
+  select(teamID, yearID, lgID, G, W, L, R, RA, AB, H, X2B, X3B, HR, BB, SO, ER, ERA, HA, HRA, BBA, SOA, HBP, SF)
+
+team_stats_20 <- Teams %>% 
+  filter(yearID >= 2001) %>%
+  select(teamID, yearID, lgID, G, W, L, R, RA, AB, H, X2B, X3B, HR, BB, SO, ER, ERA, HA, HRA, BBA, SOA, HBP, SF)
+
 #earned run adjustment
 earned_run_data <- Teams %>%
   filter(yearID > 2000) %>%
@@ -125,14 +133,37 @@ team_stats <- team_stats %>%
   BBR = BB / AB,
   runs_earnedruns = RA / ER)
 
+team_stats_10 <- team_stats_10 %>%
+  mutate(hits_per_run = H / R,
+  OBP = (H + BB + HBP)/ (AB + BB + HBP + SF),
+  SLG = ((H - X2B - X3B - HR) + (X2B * 2) + (X3B * 3) + (HR * 4)) / AB,
+  ISO = SLG - (H / (AB - BB - HBP - SF)),
+  BBR = BB / AB,
+  runs_earnedruns = RA / ER)
+
+team_stats_20 <- team_stats_20 %>%
+  mutate(hits_per_run = H / R,
+  OBP = (H + BB + HBP)/ (AB + BB + HBP + SF),
+  SLG = ((H - X2B - X3B - HR) + (X2B * 2) + (X3B * 3) + (HR * 4)) / AB,
+  ISO = SLG - (H / (AB - BB - HBP - SF)),
+  BBR = BB / AB,
+  runs_earnedruns = RA / ER)
+
+
 team_stats %>%
   group_by (teamID) %>%
   summarize(SLGPCT = mean(SLG))
   
   
-#run regression
+#run regressions
 reg_hits_per_run <- lm(hits_per_run ~ OBP + SLG + BBR, data = team_stats)
 summary(reg_hits_per_run)
+reg_hits_per_run_10 <- lm(hits_per_run ~ OBP + SLG + BBR, data = team_stats_10)
+summary(reg_hits_per_run)
+reg_hits_per_run_20 <- lm(hits_per_run ~ OBP + SLG + BBR, data = team_stats_20)
+summary(reg_hits_per_run)
+summary(reg_hits_per_run_10)
+summary(reg_hits_per_run_20)
 
 
 <!-- Residuals: -->
@@ -175,15 +206,25 @@ TeamData2021 <- TeamData2021 %>%
 reg_hits_per_run_2021 <- lm(hits_per_run ~ OBP + SLG + BBR + ISO, data = TeamData2021)
 summary(reg_hits_per_run_2021)
 
-#combine 2018-2021 data
+#combine data
+data20112020 <- team_stats_10 %>%
+  select(OBP, SLG, BBR, ISO, hits_per_run)
+data20012020 <- team_stats_20 %>%
+  select(OBP, SLG, BBR, ISO, hits_per_run)
 data20182020 <- team_stats %>%
   select(OBP, SLG, BBR, ISO, hits_per_run)
 data2021 <- TeamData2021 %>%
   select(OBP, SLG, BBR, ISO, hits_per_run)
   
 full_data <- rbind(data20182020, data2021)
+full_data_10 <- rbind(data20112020, data2021)
+full_data_20 <- rbind(data20012020, data2021)
 full_reg <- lm(hits_per_run ~ OBP + SLG + BBR + ISO, data = full_data)
 summary(full_reg)
+full_reg_10 <- lm(hits_per_run ~ OBP + SLG + BBR + ISO, data = full_data_10)
+summary(full_reg_10)
+full_reg_20 <- lm(hits_per_run ~ OBP + SLG + BBR + ISO, data = full_data_20)
+summary(full_reg_20)
 
 # runs / hit = 2.7539 + 4.0603 * OBP - 2.8383 * SLG - 8.9444 * BBR - 1.20 * ISO
 
@@ -206,7 +247,7 @@ p <- ggplot(TeamData2021, aes(x=hits_per_run)) +
   geom_density()
 p
 # Add mean line
-p+ geom_vline(aes(xintercept=mean(hits_per_run)),
+p + geom_vline(aes(xintercept=mean(hits_per_run)),
             color="blue", linetype="dashed", size=1)
             
 mean_hits_per_run_2021 <- mean(TeamData2021$hits_per_run)
@@ -223,3 +264,5 @@ p2 + ggtitle('Percentage of unearned runs by year')
 mean(by_year$yearly_avg)
 
 reg_ER <- lm(RA/ER~E, data = earned_run_data)
+
+
