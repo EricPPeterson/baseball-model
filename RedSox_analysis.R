@@ -1,4 +1,4 @@
-#RedSox Hitting Statistics
+#RedSox Analysis
 library(tidyverse)
 library(baseballr)
 library(baseballDB)
@@ -293,14 +293,17 @@ pitch_2017 <- daily_pitcher_bref('2017-03-20', '2017-10-04')
 pitch_total <- rbind(pitch_2021, pitch_2020, pitch_2019, pitch_2018, pitch_2017)
 
 
+
+
 BOS_pitching <- read.csv("~/GitHub/baseball model/BOS pitching.csv")
-total_inn <- sum(BOS_pitching$IP)
+BOS_starters <- BOS_pitching[1:5,]
+total_inn <- sum(BOS_starters$IP)
 total_inn/(162*9)
-total_ER <- sum(BOS_pitching$ER)
-avg_run_per_inning_relief <- 0.4631
+total_ER <- sum(BOS_starters$ER)
+avg_run_per_inning_relief <- 0.461139
 added_ER <- ((9*162) - total_inn) * avg_run_per_inning_relief
-totalR_BOS <- (added_ER + total_ER) * 1.085
-#total runs allowed estimate = 734
+totalR_BOS <- (added_ER + total_ER) * 1.086492
+#total runs allowed estimate = 729
 
 #final record estimate
 
