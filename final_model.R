@@ -345,3 +345,15 @@ final_prediction <- merge(WAR_adjustment, Py_wins_2021, by = 'Team') %>%
           exp_win_pct = (final_runs_scored - final_runs_surr) * coef_RD[2] + .500,
           exp_wins = round(162 * exp_win_pct, digits = 1),
           win_diff = exp_wins - W)
+
+#import wynn data
+wynn_over_under <- read.csv("~/GitHub/baseball model/wynn_over_under.csv")
+colnames(wynn_over_under)[1] <- 'Team'
+
+#combine model with wynn markets
+bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
+  select(c(Team, exp_wins, Over_Under)) %>%
+  mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100)
+
+
+#remaining WAR
