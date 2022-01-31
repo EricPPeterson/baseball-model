@@ -14,7 +14,7 @@ library(dplyr)
 #get data for park_factors
 park_factor <- fg_park(2021)
 
-#get last year's runs allowed
+#Download 2021 Standings
 AL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL East')
 AL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL Central')
 AL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL West')
@@ -22,34 +22,37 @@ NL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL East')
 NL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL Central')
 NL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL West')
 
-#combine standings to one df
+#combine standings to one dataframe
 Std_2021 <- bind_rows(AL_East_Std, AL_Cent_Std, AL_West_Std, NL_East_Std, NL_Cent_Std, NL_West_Std)
 colnames(Std_2021)[1] <- 'Team'
 
-
 #teams data from Lahman database
+#get team data back to 2000 to look at run differential linear model
 teams <- Teams %>%  
-  filter(yearID > 2000) %>%  
+  dplyr :: filter(yearID > 2000) %>%  
   select(teamID, yearID, lgID, G, W, L, R, RA)
 
 #team stats data for analysis
+#get team data back to 2018 to create linear model for hits/run
 team_stats <- Teams %>% 
-  filter(yearID >= 2018) %>%
+  dplyr :: filter(yearID >= 2018) %>%
   select(teamID, yearID, lgID, G, W, L, R, RA, AB, H, X2B, X3B, HR, BB, SO, ER, ERA, HA, HRA, BBA, SOA, HBP, SF)
 
 #earned run adjustment
+#get earned run data back to 2000 to see what % of runs are earned run on average
 earned_run_data <- Teams %>%
-  filter(yearID > 2000) %>%
+  dplyr :: filter(yearID > 2000) %>%
   select(teamID, yearID, RA,ER, E)
 
-#earned run adjustment
 by_year <- earned_run_data %>%
   group_by(yearID) %>%
   summarize(yearly_avg = mean(RA/ER))
 
 #2021 data for building model
+#use 2021 data to see how many runs teams 'should' have scored and 'should' have allowed after removing cluster luck.
 TeamData2021 <- read.csv("~/GitHub/baseball model/2021TeamData.csv")
 
+#create teams df for creating lm for run differential
 teams <- teams %>% 
   mutate (RD = R - RA, Wpct = W / (W + L))
 
@@ -65,9 +68,11 @@ lm_RD <- lm(Wpct ~ RD, data = teams)
 
 summary(lm_RD)
 
+#save coefficients of linear model to predict wins for teams based on predicted runs scored and runs allowed.
 coef_RD <- lm_RD$coefficients
 
 #check residuals
+#see if linear model residuals are random and normally distributed
 library(lmtest)
 library(fBasics)
 dwtest(lm_RD)
@@ -79,6 +84,7 @@ plot(lm_RD, which = 2, col = c('red'))
 
 #residuals look normal and randomly distributed
 
+#use below formula to turn run differential into predicted win %
 #win pct = 0.5000 + 0.0006281 * run_diff
 
 #expected Wpct
@@ -92,6 +98,7 @@ teams %>%
   summarize(rmse = sqrt(mean(resExpWpct^2)))
 
 #incremental runs needed for a win
+#create table to confirm how many runs added to run differential equals 1 win.
 IR <- function(RS = 5, RA = 5){
   (RS^2 + RA^2)^2 / (2 * RS * RA^2)
 }
@@ -103,9 +110,7 @@ ir_table %>%
   spread(key = RA, value = IRW, sep = '=') %>%
   round(1)
 
-
 #hitting data
-
 #team data
 Batting_Data_2021 <- read.csv("~/GitHub/baseball model/Batting_Data_2021.csv")
 Batting_Data_2021$Season <- 2021
@@ -142,7 +147,6 @@ steamer_hitting <- as.data.frame(read.csv("~/GitHub/baseball model/steamer_hitti
   dplyr::filter(AB > 50)
 colnames(steamer_hitting)[1] <- 'Name'
 steamer_hitting$Team <- sub("^$", "FA", steamer_hitting$Team)
-
 
 #pitching data
 #team data
@@ -354,6 +358,5 @@ colnames(wynn_over_under)[1] <- 'Team'
 bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
   select(c(Team, exp_wins, Over_Under)) %>%
   mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100)
-
 
 #remaining WAR
