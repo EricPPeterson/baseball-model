@@ -358,5 +358,3 @@ colnames(wynn_over_under)[1] <- 'Team'
 bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
   select(c(Team, exp_wins, Over_Under)) %>%
   mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100)
-
-#remaining WAR
