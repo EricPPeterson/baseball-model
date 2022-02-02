@@ -87,6 +87,7 @@ plot(lm_RD, which = 2, col = c('red'))
 #use below formula to turn run differential into predicted win %
 #win pct = 0.5000 + 0.0006281 * run_diff
 
+
 #expected Wpct
 teams <- teams %>% 
   mutate(ExpWpct = (R-RA) * coef_RD[2] + .500)
@@ -202,7 +203,7 @@ relief <- 0.463
 
 #steamer projection
 steamer_pitching <- read.csv("~/GitHub/baseball model/steamer_pitching.csv") %>%
-  dplyr::filter(IP > 70)
+  dplyr :: filter(WAR > 0)
 colnames(steamer_pitching)[1] <- 'Name'
 steamer_pitching$Team <- sub("^$", "FA", steamer_pitching$Team)
 
@@ -223,20 +224,22 @@ summary(lm_model_2)
 coef <- lm_model_2$coefficients
 #hit_per_run = 2.5708 - 6.6440 * BB_rate - 3.2686 * ISO + 1.2421 * BABIP
 
+#check runs correlation
+cor(lm_df_3[-1], lm_df_3$R)
+num <- sapply(Batting_Data, is.numeric)
+y1 <- 'R'
+x1 <- setdiff(names(Batting_Data)[num], y1)
+runs_corr <- cor(Batting_Data[x1], Batting_Data[[y1]])
+
 #create final expected runs
 Final_Offense <- Batting_Data_2021 %>%
   mutate(exp_hit_per_run = coef[1] + (coef[2] * BB_rate) + (coef[3] * ISO) + (coef[4] * BABIP),
          exp_runs = H /exp_hit_per_run,
-         run_diff = exp_runs - R)
+         run_diff = exp_runs - R,
+         RC = ((H + BB - CS + HBP) * ((X1B + 2*X2B + 3*X3B + 4*HR) + (.26 * (BB - IBB + HBP) + (.52 * (SH + SF + SB)))) / (AB + BB + HBP + SH + SF)))
 Final_Offense <- Final_Offense %>%
-  select(Team, exp_hit_per_run, exp_runs, R, run_diff)
+  select(Team, exp_hit_per_run, exp_runs, R, run_diff, RC)
 
-#second runs analysis
-lm_runs_df <- Batting_Data %>%
-  select(c(R, BB_rate, K_rate, HR_rate, ISO, BABIP, AVG, OBP, SLG))
-lm_runs_model <- lm(R~., data = lm_runs_df)
-step_runs <- ols_step_all_possible(lm_runs_model)
-output_runs <- as.data.frame(step_runs$predictors, step$adjr)
 
 #lm pitching
 lm_df <- Pitching_Data %>%
@@ -257,7 +260,7 @@ coef2 <- lm_model_2$coef
   
 #earned runs analysis
 #total_runs / earned_runs = 1.086492
-UE_runs <- 1.086492
+UE_runs <- by_year
 
 p2 <- ggplot(by_year, aes(x = yearID, y = yearly_avg - 1)) + geom_line()
 p2 + ggtitle('Percentage of unearned runs by year')
@@ -358,3 +361,18 @@ colnames(wynn_over_under)[1] <- 'Team'
 bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
   select(c(Team, exp_wins, Over_Under)) %>%
   mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100)
+
+
+#look at innings pitched steamer
+sum_IP_steamer <- steamer_pitching %>%
+  group_by(Team) %>%
+  dplyr :: summarise(totalIP = sum(IP))
+
+
+
+#kelly criterion betting
+# < 5% edge = no bet
+# > 5 % - 7.5% = .5% of bankroll
+# 7.5% - 10% = 1.0% of bankroll
+# 10% - 15% = 1.5% of bankroll
+# 16% - 20% = 2.0 % of bankroll
