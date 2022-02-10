@@ -42,11 +42,11 @@ team_stats <- Teams %>%
 #get earned run data back to 2000 to see what % of runs are earned run on average
 earned_run_data <- Teams %>%
   dplyr :: filter(yearID > 2000) %>%
-  select(teamID, yearID, RA,ER, E)
+  select(teamID, yearID, RA, ER, E)
 
 by_year <- earned_run_data %>%
-  group_by(yearID) %>%
-  summarize(yearly_avg = mean(RA/ER))
+  dplyr :: group_by(yearID) %>%
+  dplyr :: summarize(yearly_avg = mean(RA/ER))
 
 #2021 data for building model
 #use 2021 data to see how many runs teams 'should' have scored and 'should' have allowed after removing cluster luck.
@@ -90,7 +90,7 @@ plot(lm_RD, which = 2, col = c('red'))
 
 #expected Wpct
 teams <- teams %>% 
-  mutate(ExpWpct = (R-RA) * coef_RD[2] + .500)
+  mutate(ExpWpct = (R-RA) * coef_RD[2] + coef_RD[1])
 
 teams <- teams %>%
   mutate(resExpWpct = Wpct - ExpWpct)
@@ -141,8 +141,6 @@ Batting_Data_2021 <- Batting_Data_2021 %>%
          BB_rate = BB_rate/100,
          K_rate = K_rate/100)
 
-sacs_total <- 38
-
 #steamer projection
 steamer_hitting <- as.data.frame(read.csv("~/GitHub/baseball model/steamer_hitting.csv")) %>%
   dplyr::filter(AB > 50)
@@ -190,20 +188,17 @@ relief_pitching_stats <- relief_pitching_stats %>%
   mutate(games_pitched = IP / 9,
          total_ER = games_pitched * ERA)
 
-relief_pitching_stats %>%
-  group_by(League) %>%
-  dplyr :: summarise(
-    total_inn = sum(IP),
-    runs_per_inn = sum(total_ER) / sum(total_inn)
-  )
+relief <- relief_pitching_stats %>%
+            group_by(League) %>%
+            dplyr :: summarise(
+            total_inn = sum(IP),
+            runs_per_inn = sum(total_ER) / sum(total_inn)
+            )
 
-relief_AL <- 0.461
-relief_NL <- 0.465
-relief <- 0.463
+relief_avg <- mean(relief$runs_per_inn)
 
 #steamer projection
-steamer_pitching <- read.csv("~/GitHub/baseball model/steamer_pitching.csv") %>%
-  dplyr :: filter(WAR > 0)
+steamer_pitching <- read.csv("~/GitHub/baseball model/steamerpitching.csv")
 colnames(steamer_pitching)[1] <- 'Name'
 steamer_pitching$Team <- sub("^$", "FA", steamer_pitching$Team)
 
@@ -224,21 +219,13 @@ summary(lm_model_2)
 coef <- lm_model_2$coefficients
 #hit_per_run = 2.5708 - 6.6440 * BB_rate - 3.2686 * ISO + 1.2421 * BABIP
 
-#check runs correlation
-cor(lm_df_3[-1], lm_df_3$R)
-num <- sapply(Batting_Data, is.numeric)
-y1 <- 'R'
-x1 <- setdiff(names(Batting_Data)[num], y1)
-runs_corr <- cor(Batting_Data[x1], Batting_Data[[y1]])
-
 #create final expected runs
 Final_Offense <- Batting_Data_2021 %>%
   mutate(exp_hit_per_run = coef[1] + (coef[2] * BB_rate) + (coef[3] * ISO) + (coef[4] * BABIP),
          exp_runs = H /exp_hit_per_run,
-         run_diff = exp_runs - R,
-         RC = ((H + BB - CS + HBP) * ((X1B + 2*X2B + 3*X3B + 4*HR) + (.26 * (BB - IBB + HBP) + (.52 * (SH + SF + SB)))) / (AB + BB + HBP + SH + SF)))
+         run_diff = exp_runs - R)
 Final_Offense <- Final_Offense %>%
-  select(Team, exp_hit_per_run, exp_runs, R, run_diff, RC)
+  select(Team, exp_hit_per_run, exp_runs, R, run_diff)
 
 
 #lm pitching
@@ -260,19 +247,15 @@ coef2 <- lm_model_2$coef
   
 #earned runs analysis
 #total_runs / earned_runs = 1.086492
-UE_runs <- by_year
-
-p2 <- ggplot(by_year, aes(x = yearID, y = yearly_avg - 1)) + geom_line()
-p2 + ggtitle('Percentage of unearned runs by year')
-runs_ER <- mean(by_year$yearly_avg)
+UE_runs <- mean(by_year$yearly_avg)
 
 reg_ER <- lm(RA/ER~E, data = earned_run_data)
 summary(reg_ER)
-
+#no real correlation between unearned runs and errors
 
 Pitching_Data_2021 <- Pitching_Data_2021 %>%
   mutate(exp_ERA = coef2[1] + (coef2[2] * K_per_9) + (coef2[3] * BB_per_9) + (coef2[4] * HR_per_9) + (coef2[5] * BABIP),
-         exp_earned_runs_allowed = (exp_ERA * (IP/9)) + ((162*9) - IP) * 0.463,
+         exp_earned_runs_allowed = (exp_ERA * (IP/9)) + (((162*9) - IP) * 0.463),
          total_runs_allowed = exp_earned_runs_allowed * runs_ER  
          )
 
@@ -292,7 +275,7 @@ RA_2021 <- Std_2021 %>%
 #2021 final pythagorean wins
 Py_wins_2021 <- merge(Final_Pitching, Final_Offense, by = 'Team')
 Py_wins_2021 <- Py_wins_2021 %>%
-  mutate(exp_win_pct = ((exp_runs - total_runs_allowed) * coef_RD[2]) + .500,
+  mutate(exp_win_pct = ((exp_runs - total_runs_allowed) * coef_RD[2]) + coef_RD[1],
          exp_wins = 162 * exp_win_pct)
 
 act_wins <- Std_2021 %>%
@@ -308,38 +291,45 @@ Py_wins_2021 <- Py_wins_2021 %>%
 #steamer stats
 #hit_per_run = 2.5708 - 6.6440 * BB_rate - 3.2686 * ISO + 1.2421 * BABIP
 #ERA = -1.05469 - 0.23055 * K_per_9 + 0.40402 * BB_per_9 + 1.56898 * HR_per_9 + 13.91693 * BABIP
-
+gm = 9 
 runs_allowed = steamer_pitching %>%
       group_by(Team) %>%
-      dplyr :: summarise(sum_ER = sum(ERA/9 * IP), sumIP = sum(IP))
+      dplyr :: summarise(sum_ER = sum(ERA/gm * IP), sumIP = sum(IP))
 
 runs_allowed <- runs_allowed %>%
   dplyr :: mutate(relief_innings = (162*9) - sumIP,
-           relief_runs = ((162*9 - sumIP) * relief),
+           relief_runs = ((162*9 - sumIP) * relief_avg),
            total_ER = sum_ER + relief_runs,
            total_runs_allowed = total_ER * UE_runs)
 
 runs_allowed <- merge(runs_allowed, RA_2021, by = 'Team')
 
-
 #compare WAR this year to last
 WAR_2022_hitting <- steamer_hitting %>%
   group_by(Team) %>%
-  dplyr :: summarise(sum_WAR = sum(WAR))
+  dplyr :: summarise(total_WAR_2022 = sum(WAR))
 
 WAR_2022_hitting <- left_join(WAR_2022_hitting, Batting_Data_2021, by = 'Team') %>%
-  select(c(Team, sum_WAR, WAR)) %>%
-  mutate(WAR_diff = sum_WAR - WAR,
+  select(c(Team, total_WAR_2022, WAR)) %>%
+  mutate(WAR_diff = total_WAR_2022 - WAR,
          runs_scored_diff = WAR_diff * 10)
 
 WAR_2022_pitching <- steamer_pitching %>%
   group_by(Team) %>%
-  dplyr :: summarise (sum_WAR = sum(WAR))
+  dplyr :: summarise (total_WAR_2022 = sum(WAR))
 
-WAR_2022_pitching <- left_join(WAR_2022_pitching, Pitching_Data_2021, by = 'Team') %>%
-  select(c(Team, sum_WAR, WAR)) %>%
-  mutate(WAR_diff = WAR - sum_WAR,
-         runs_surr_diff = WAR_diff * 10)
+#pitching_2021_WAR_correction <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction.csv")
+pitching_2021_WAR_correction_full <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction_full.csv")
+
+
+summarize_WAR_pitching <- pitching_2021_WAR_correction_full %>%
+  group_by(Team) %>%
+  dplyr :: summarise (total_WAR_2021 = sum(WAR))
+
+WAR_2022_pitching <- left_join(WAR_2022_pitching, summarize_WAR_pitching, by = 'Team') %>%
+  select(c(Team, total_WAR_2022, total_WAR_2021)) %>%
+  mutate(WAR_diff = total_WAR_2022 - total_WAR_2021,
+         runs_surr_diff = -WAR_diff * 10)
 
 #add 2022 adjustments to data
 WAR_adjustment <- left_join(WAR_2022_pitching, WAR_2022_hitting, by = 'Team') %>%
@@ -360,14 +350,12 @@ colnames(wynn_over_under)[1] <- 'Team'
 #combine model with wynn markets
 bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
   select(c(Team, exp_wins, Over_Under)) %>%
-  mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100)
+  mutate(pct_diff = ((exp_wins - Over_Under) / Over_Under) * 100,
+         diff = (exp_wins - Over_Under),
+         win_pct = exp_wins / 162)
 
-
-#look at innings pitched steamer
-sum_IP_steamer <- steamer_pitching %>%
-  group_by(Team) %>%
-  dplyr :: summarise(totalIP = sum(IP))
-
+setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/daily_betting")
+write.csv(bets, 'over_under_wins.csv', row.names = FALSE)
 
 
 #kelly criterion betting
