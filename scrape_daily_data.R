@@ -53,3 +53,9 @@ away_team <- function(win_prob){
   win_prob = win_prob - 0.04
   return(win_prob)
 }
+
+#log5 model
+log5 <- function(A,B){
+  Pa = (A - (A * B)) / (A + B - (2 * A * B))
+  return(Pa)
+}

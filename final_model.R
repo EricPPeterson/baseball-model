@@ -16,11 +16,17 @@ park_factor <- fg_park(2021)
 
 #Download 2021 Standings
 AL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL East')
+AL_East_Std$Division <- 'AL East'
 AL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL Central')
+AL_Cent_Std$Division <- 'AL Cent'
 AL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL West')
+AL_West_Std$Division <- 'AL West' 
 NL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL East')
+NL_East_Std$Division <- 'NL East'
 NL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL Central')
+NL_Cent_Std$Division <- 'NL Cent'
 NL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL West')
+NL_West_Std$Division <- 'NL West'
 
 #combine standings to one dataframe
 Std_2021 <- bind_rows(AL_East_Std, AL_Cent_Std, AL_West_Std, NL_East_Std, NL_Cent_Std, NL_West_Std)
@@ -356,7 +362,7 @@ bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/daily_betting")
 write.csv(bets, 'over_under_wins.csv', row.names = FALSE)
-
+write.csv(Std_2021, 'Standings', row.names = FALSE)
 
 #kelly criterion betting
 # < 5% edge = no bet
