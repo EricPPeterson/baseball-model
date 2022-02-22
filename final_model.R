@@ -262,7 +262,7 @@ summary(reg_ER)
 Pitching_Data_2021 <- Pitching_Data_2021 %>%
   mutate(exp_ERA = coef2[1] + (coef2[2] * K_per_9) + (coef2[3] * BB_per_9) + (coef2[4] * HR_per_9) + (coef2[5] * BABIP),
          exp_earned_runs_allowed = (exp_ERA * (IP/9)) + (((162*9) - IP) * 0.463),
-         total_runs_allowed = exp_earned_runs_allowed * runs_ER  
+         total_runs_allowed = exp_earned_runs_allowed * UE_runs  
          )
 
 #final pitching
