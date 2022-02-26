@@ -363,6 +363,7 @@ bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/daily_betting")
 write.csv(bets, 'over_under_wins.csv', row.names = FALSE)
 write.csv(Std_2021, 'Standings', row.names = FALSE)
+write.csv(final_prediction, 'final_prediction', row.names = FALSE)
 
 #kelly criterion betting
 # < 5% edge = no bet

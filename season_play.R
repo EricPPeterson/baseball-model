@@ -209,6 +209,13 @@ for(i in 1:length(teams)){
 
 
 #calculate winners of division over 10k seasons
+AL_East <- thousand_seasons %>%
+  dplyr :: filter(Division == 'AL East')
+
+df_ALEast <- data.frame(AL_East$Team)
+df_ALEast$Division_Win <- 0
+
+
 for(i in 3:ncol(AL_East)){
   if(AL_East[1,i] == max(AL_East[,i])){
     df_ALEast[1,2] <- df_ALEast[1,2] + 1
