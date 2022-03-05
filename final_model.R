@@ -325,10 +325,10 @@ WAR_2022_pitching <- steamer_pitching %>%
   dplyr :: summarise (total_WAR_2022 = sum(WAR))
 
 #pitching_2021_WAR_correction <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction.csv")
-pitching_2021_WAR_correction_full <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction_full.csv")
+#pitching_2021_WAR_correction_full <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction_full.csv")
+Pitching_Data_2021_starters <- read.csv("~/GitHub/baseball model/Pitching_Data_2021_starters.csv")
 
-
-summarize_WAR_pitching <- pitching_2021_WAR_correction_full %>%
+summarize_WAR_pitching <- Pitching_Data_2021_starters %>%
   group_by(Team) %>%
   dplyr :: summarise (total_WAR_2021 = sum(WAR))
 
@@ -362,8 +362,8 @@ bets <- left_join(final_prediction, wynn_over_under, by = 'Team') %>%
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/daily_betting")
 write.csv(bets, 'over_under_wins.csv', row.names = FALSE)
-write.csv(Std_2021, 'Standings', row.names = FALSE)
-write.csv(final_prediction, 'final_prediction', row.names = FALSE)
+write.csv(Std_2021, 'Standings.csv', row.names = FALSE)
+write.csv(final_prediction, 'final_prediction.csv', row.names = FALSE)
 
 #kelly criterion betting
 # < 5% edge = no bet

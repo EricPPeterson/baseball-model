@@ -6,7 +6,7 @@ library(tidyverse)
 #Interleague play will feature AL East vs. NL Central, AL Central vs. NL West, and AL West vs. NL East.
 
 #import data from model
-over_under_wins <- read.csv("~/GitHub/baseball model/daily_betting/over_under_wins.csv")
+over_under_wins <- read.csv("~/GitHub/baseball model/daily_betting/over_under_wins2.csv")
 Standings <- read.csv("~/GitHub/baseball model/daily_betting/Standings")
 season_play <- left_join(over_under_wins, Standings, by = 'Team') %>%
   select(c('Team', 'win_pct', 'Division'))
@@ -14,18 +14,6 @@ season_play <- season_play[order(season_play$Division),]
 season_play$wins <- 0
 season_play$loss <- 0
 
-for(i in 1:nrow(season_play)){
-  if(season_play[i,2] < 0.468){
-    season_play[i,4] <- 2
-    season_play[i,5] <- 4
-  } else if(season_play[i,2] > .525) {
-    season_play[i,4] <- 4
-    season_play[i,5] <- 2
-  } else{
-    season_play[i,4] <- 3
-    season_play[i,4] <- 3
-  }
-}
 
 #season play
 #log5 model
@@ -166,7 +154,7 @@ colnames(thousand_seasons) <- c('Team')
 thousand_seasons$Team <- season_play$Team
 thousand_seasons$Division <- season_play$Division
 
-#do loop 1k times
+#do loop 10k times
 for(k in 1:10000){
   output <- games()
   wins <- output$wins
