@@ -6,7 +6,7 @@ library(tidyverse)
 #Interleague play will feature AL East vs. NL Central, AL Central vs. NL West, and AL West vs. NL East.
 
 #import data from model
-over_under_wins <- read.csv("~/GitHub/baseball model/daily_betting/over_under_wins2.csv")
+over_under_wins <- read.csv("~/GitHub/baseball model/daily_betting/over_under_wins.csv")
 Standings <- read.csv("~/GitHub/baseball model/daily_betting/Standings")
 season_play <- left_join(over_under_wins, Standings, by = 'Team') %>%
   select(c('Team', 'win_pct', 'Division'))
