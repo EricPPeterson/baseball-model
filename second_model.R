@@ -155,7 +155,7 @@ steamer_hitting$Team <- sub("^$", "FA", steamer_hitting$Team)
 
 #pitching data
 #team data
-Pitching_Data_2021 <- read.csv("~/GitHub/baseball model/Pitching_Data_2021.csv")
+Pitching_Data_2021 <- read.csv("~/GitHub/baseball model/pitching_2021_2ndmodel.csv")
 Pitching_Data_2021$Season <- 2021
 Pitching_Data_2020 <- read.csv("~/GitHub/baseball model/Pitching_Data_2020.csv")
 Pitching_Data_2020$Season <- 2020
@@ -324,11 +324,8 @@ WAR_2022_pitching <- steamer_pitching %>%
   group_by(Team) %>%
   dplyr :: summarise (total_WAR_2022 = sum(WAR))
 
-#pitching_2021_WAR_correction <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction.csv")
-#pitching_2021_WAR_correction_full <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction_full.csv")
-Pitching_Data_2021_starters <- read.csv("~/GitHub/baseball model/Pitching_Data_2021_starters.csv")
 
-summarize_WAR_pitching <- Pitching_Data_2021_starters %>%
+summarize_WAR_pitching <- Pitching_Data_2021 %>%
   group_by(Team) %>%
   dplyr :: summarise (total_WAR_2021 = sum(WAR))
 
