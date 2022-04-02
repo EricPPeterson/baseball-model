@@ -166,8 +166,6 @@ Batting_Data_2021 <- Batting_Data_2021 %>%
          K_rate = K_rate/100)
 
 #steamer projection
-#steamer_hitting <- as.data.frame(read.csv("~/GitHub/baseball model/steamer_hitting.csv")) %>%
-#  dplyr::filter(AB > 50)
 steamer_hitting <- read.csv("~/GitHub/baseball model/steamerhitting2022_final.csv")
 colnames(steamer_hitting)[1] <- 'Name'
 steamer_hitting$Team <- sub("^$", "FA", steamer_hitting$Team)
@@ -330,6 +328,7 @@ runs_allowed <- runs_allowed %>%
 runs_allowed <- merge(runs_allowed, RA_2021, by = 'Team')
 
 #compare WAR this year to last
+war <- 9
 WAR_2022_hitting <- steamer_hitting %>%
   group_by(Team) %>%
   dplyr :: summarise(total_WAR_2022 = sum(WAR))
@@ -337,14 +336,12 @@ WAR_2022_hitting <- steamer_hitting %>%
 WAR_2022_hitting <- left_join(WAR_2022_hitting, Batting_Data_2021, by = 'Team') %>%
   select(c(Team, total_WAR_2022, WAR)) %>%
   mutate(WAR_diff = total_WAR_2022 - WAR,
-         runs_scored_diff = WAR_diff * 9.0)
+         runs_scored_diff = WAR_diff * war)
 
 WAR_2022_pitching <- steamer_pitching %>%
   group_by(Team) %>%
   dplyr :: summarise (total_WAR_2022 = sum(WAR))
 
-#pitching_2021_WAR_correction <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction.csv")
-#pitching_2021_WAR_correction_full <- read.csv("~/GitHub/baseball model/pitching_2021_WAR_correction_full.csv")
 Pitching_Data_2021_starters <- read.csv("~/GitHub/baseball model/Pitching_Data_2021_starters.csv")
 
 summarize_WAR_pitching <- Pitching_Data_2021_starters %>%
@@ -354,7 +351,7 @@ summarize_WAR_pitching <- Pitching_Data_2021_starters %>%
 WAR_2022_pitching <- left_join(WAR_2022_pitching, summarize_WAR_pitching, by = 'Team') %>%
   select(c(Team, total_WAR_2022, total_WAR_2021)) %>%
   mutate(WAR_diff = total_WAR_2022 - total_WAR_2021,
-         runs_surr_diff = -WAR_diff * 9.0)
+         runs_surr_diff = -WAR_diff * war)
 
 #add 2022 adjustments to data
 WAR_adjustment <- left_join(WAR_2022_pitching, WAR_2022_hitting, by = 'Team') %>%

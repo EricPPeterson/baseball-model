@@ -155,7 +155,7 @@ thousand_seasons$Team <- season_play$Team
 thousand_seasons$Division <- season_play$Division
 
 #do loop 10k times
-for(k in 1:10000){
+for(k in 1:1000){
   output <- games()
   wins <- output$wins
   thousand_seasons <- cbind(thousand_seasons,wins)
