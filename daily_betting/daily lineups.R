@@ -34,7 +34,7 @@ log5 <- function(A,B){
 }
 
 #set lineup with probable pitchers and standard lineup
-url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-07'
+url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-03'
 #read url into correct format
 page_probables <- read_html(url_probables)
 #turn page_probables into dataframe
@@ -102,23 +102,26 @@ probables_adjustment <- probables_adjustment %>%
 
 #calcuate out daily odds of teams winning to place bets
 for(i in 1:nrow(sched_probables)){
+
   home_team <- sched_probables[i,1]
   away_team <- sched_probables[i,5]
   
   home_team_win_pct <- probables_adjustment %>%
     dplyr :: filter(Team == home_team) %>%
-    dplyr :: select(win_pct) %>%
-    mutate(win_pct = win_pct + HFA)
+    dplyr :: select(win_pct)
+  print(i)
+  print(home_team_win_pct)
+  
   away_team_win_pct <- probables_adjustment %>%
     dplyr :: filter(Team == away_team) %>%
-    dplyr :: select(win_pct) %>%
-    mutate(win_pct = win_pct - HFA)
+    dplyr :: select(win_pct)
+  print(away_team_win_pct)
   
   sched_probables[i,2] <- home_team_win_pct
   sched_probables[i,6] <- away_team_win_pct
   
-  sched_probables[i,3] <- log5(home_team_win_pct,away_team_win_pct)
-  sched_probables[i,7] <- 1 - sched_probables[i,3]
+  sched_probables[i,3] <- log5(home_team_win_pct,away_team_win_pct) + HFA
+  sched_probables[i,7] <- 1 - sched_probables[i,3] - HFA
   
   sched_probables[i,4] <- 1/sched_probables[i,3]
   sched_probables[i,8] <- 1/sched_probables[i,7]
@@ -130,7 +133,7 @@ write.csv(sched_probables, 'probables_bets.csv', row.names = FALSE)
 ##########################################################################################################3
 ##here we'll download the final lineups once they're set
 #need to import final lineups to set daily lineup
-url_lineups <- 'https://www.mlb.com/starting-lineups/2022-03-31'
+url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-02'
 page_lineups <- read_html(url_lineups)
 players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% html_text()
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
