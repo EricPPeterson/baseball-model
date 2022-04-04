@@ -34,7 +34,7 @@ log5 <- function(A,B){
 }
 
 #set lineup with probable pitchers and standard lineup
-url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-03'
+url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-04'
 #read url into correct format
 page_probables <- read_html(url_probables)
 #turn page_probables into dataframe
@@ -102,21 +102,20 @@ probables_adjustment <- probables_adjustment %>%
 
 #calcuate out daily odds of teams winning to place bets
 for(i in 1:nrow(sched_probables)){
-
+  
   home_team <- sched_probables[i,1]
   away_team <- sched_probables[i,5]
   
+  if(home_team %in% probable_pitchers$Team == F || away_team %in% probable_pitchers$Team == F) next
+
   home_team_win_pct <- probables_adjustment %>%
     dplyr :: filter(Team == home_team) %>%
     dplyr :: select(win_pct)
-  print(i)
-  print(home_team_win_pct)
   
   away_team_win_pct <- probables_adjustment %>%
     dplyr :: filter(Team == away_team) %>%
     dplyr :: select(win_pct)
-  print(away_team_win_pct)
-  
+
   sched_probables[i,2] <- home_team_win_pct
   sched_probables[i,6] <- away_team_win_pct
   
