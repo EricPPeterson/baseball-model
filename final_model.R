@@ -13,17 +13,17 @@ library(dplyr)
 
 
 #Download 2021 Standings
-AL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL East')
+AL_East_Std <- standings_on_date_bref(date = '2021-10-03', division = 'AL East')
 AL_East_Std$Division <- 'AL East'
-AL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL Central')
+AL_Cent_Std <- standings_on_date_bref(date = '2021-10-03', division = 'AL Central')
 AL_Cent_Std$Division <- 'AL Cent'
-AL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'AL West')
+AL_West_Std <- standings_on_date_bref(date = '2021-10-03', division = 'AL West')
 AL_West_Std$Division <- 'AL West' 
-NL_East_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL East')
+NL_East_Std <- standings_on_date_bref(date = '2021-10-03', division = 'NL East')
 NL_East_Std$Division <- 'NL East'
-NL_Cent_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL Central')
+NL_Cent_Std <- standings_on_date_bref(date = '2021-10-03', division = 'NL Central')
 NL_Cent_Std$Division <- 'NL Cent'
-NL_West_Std <- standings_on_date_bref(date = '2021-10-05', division = 'NL West')
+NL_West_Std <- standings_on_date_bref(date = '2021-10-03', division = 'NL West')
 NL_West_Std$Division <- 'NL West'
 
 #combine standings to one dataframe

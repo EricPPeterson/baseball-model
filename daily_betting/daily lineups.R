@@ -12,7 +12,7 @@ rm(final_prediction)
 UE_runs <- 1.0865
 relief <- 0.46309
 WAR <- 9
-HFA <- 0.04
+HFA <- 0.00
 full_season <- 162
 steamer_pitching <- read.csv("~/GitHub/baseball model/steamerpitching2022_final.csv", header=TRUE)
 colnames(steamer_pitching)[1] <- 'Name'
@@ -34,7 +34,7 @@ log5 <- function(A,B){
 }
 
 #set lineup with probable pitchers and standard lineup
-url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-04'
+url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-08'
 #read url into correct format
 page_probables <- read_html(url_probables)
 #turn page_probables into dataframe
@@ -104,7 +104,7 @@ probables_adjustment <- probables_adjustment %>%
 for(i in 1:nrow(sched_probables)){
   
   home_team <- sched_probables[i,1]
-  away_team <- sched_probables[i,5]
+  away_team <- sched_probables[i,7]
   
   if(home_team %in% probable_pitchers$Team == F || away_team %in% probable_pitchers$Team == F) next
 
@@ -117,13 +117,13 @@ for(i in 1:nrow(sched_probables)){
     dplyr :: select(win_pct)
 
   sched_probables[i,2] <- home_team_win_pct
-  sched_probables[i,6] <- away_team_win_pct
+  sched_probables[i,8] <- away_team_win_pct
   
   sched_probables[i,3] <- log5(home_team_win_pct,away_team_win_pct) + HFA
-  sched_probables[i,7] <- 1 - sched_probables[i,3] - HFA
+  sched_probables[i,9] <- 1 - sched_probables[i,3]
   
   sched_probables[i,4] <- 1/sched_probables[i,3]
-  sched_probables[i,8] <- 1/sched_probables[i,7]
+  sched_probables[i,10] <- 1/sched_probables[i,9]
 }
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
@@ -132,7 +132,7 @@ write.csv(sched_probables, 'probables_bets.csv', row.names = FALSE)
 ##########################################################################################################3
 ##here we'll download the final lineups once they're set
 #need to import final lineups to set daily lineup
-url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-02'
+url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-08'
 page_lineups <- read_html(url_lineups)
 players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% html_text()
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
@@ -197,10 +197,15 @@ coef_win_pct <- 0.0006281
 daily_adjustment <- daily_adjustment %>%
   mutate(win_pct = five_hundred + (coef_win_pct * daily_run_diff))
 
+daily_adjustment <- daily_adjustment %>% 
+  filter_all(~ !is.na(.))
+
 
 for(i in 1:nrow(sched)){
   home_team <- sched[i,1]
-  away_team <- sched[i,5]
+  away_team <- sched[i,7]
+  
+  if(home_team %in% daily_adjustment$Team == F || away_team %in% daily_adjustment$Team == F) next
   
   home_team_win_pct <- daily_adjustment %>%
     dplyr :: filter(Team == home_team) %>%
@@ -212,13 +217,13 @@ for(i in 1:nrow(sched)){
     mutate(win_pct = win_pct - HFA)
   
   sched[i,2] <- home_team_win_pct
-  sched[i,6] <- away_team_win_pct
+  sched[i,8] <- away_team_win_pct
   
   sched[i,3] <- log5(home_team_win_pct,away_team_win_pct)
-  sched[i,7] <- 1 - sched[i,3]
+  sched[i,9] <- 1 - sched[i,3]
   
   sched[i,4] <- 1/sched[i,3]
-  sched[i,8] <- 1/sched[i,7]
+  sched[i,10] <- 1/sched[i,9]
 }
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
