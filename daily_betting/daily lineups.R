@@ -138,6 +138,7 @@ players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% ht
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
 starting_lineups <- data.frame(players, stringsAsFactors = FALSE)
 colnames(starting_lineups) <- c('Name')
+
 starting_pitchers <- data.frame(pitchers, stringsAsFactors = FALSE)
 colnames(starting_pitchers) <- c('Name')
   
@@ -147,6 +148,9 @@ starting_pitchers <- left_join(starting_pitchers, steamer_pitching, by = 'Name')
 
 starting_lineups <- left_join(starting_lineups, steamer_hitting, by = 'Name') %>%
   dplyr :: select(c(Name, Team, adj_WAR))
+starting_lineups <- starting_lineups %>%
+  dplyr :: filter(is.na(Team) == F)
+
 
 starting_lineups <- starting_lineups %>%
   dplyr :: filter(WAR != 'NA')
@@ -209,17 +213,16 @@ for(i in 1:nrow(sched)){
   
   home_team_win_pct <- daily_adjustment %>%
     dplyr :: filter(Team == home_team) %>%
-    dplyr :: select(win_pct) %>%
-    mutate(win_pct = win_pct + HFA)
+    dplyr :: select(win_pct)
+  
   away_team_win_pct <- daily_adjustment %>%
     dplyr :: filter(Team == away_team) %>%
-    dplyr :: select(win_pct) %>%
-    mutate(win_pct = win_pct - HFA)
+    dplyr :: select(win_pct)
   
   sched[i,2] <- home_team_win_pct
   sched[i,8] <- away_team_win_pct
   
-  sched[i,3] <- log5(home_team_win_pct,away_team_win_pct)
+  sched[i,3] <- log5(home_team_win_pct,away_team_win_pct) + HFA
   sched[i,9] <- 1 - sched[i,3]
   
   sched[i,4] <- 1/sched[i,3]
@@ -228,5 +231,3 @@ for(i in 1:nrow(sched)){
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
 write.csv(sched, 'today_bets.csv', row.names = FALSE)
-
-
