@@ -68,26 +68,41 @@ probables_WAR <- left_join(probables_WAR, pitching_sumWAR, by = 'Team') %>%
 #filter down just to standard starters
 starting_players <- steamer_hitting %>%
   dplyr :: filter(Starters == 'X') %>%
-  dplyr :: select(c(Name, Team, adj_WAR))
+  dplyr :: select(c(Name, Team, adj_WAR, LHP_Platoon, RHP_Platoon))
 
-#for (i in 1:nrow(probable_pitchers)){
-  
-#  team_1 <- probable_pitchers$Team[i]
-#  throws <- probable_pitchers$Throws[i]
-  
-#  for (j in 1:nrow(handy)){
-#    if (team_1 == handy$First_Team[j]){
-#      team_2 = handy$Second_Team[j]
-#    }
-  
-#  for (k in 1:nrow(starting_players)){
-#    if (starting_players$Team[k] == team_2){
-      
-#    }
-#  }
-#  }
-#  }
+temp_df <- data_frame(data.frame(matrix(ncol = 5, nrow = 0)))
+colnames(temp_df) <- colnames(starting_players)
+temp_df2 <- data_frame(data.frame(matrix(ncol = 5, nrow = 0)))
+colnames(temp_df) <- colnames(starting_players)
 
+for (i in 1:nrow(probable_pitchers)){
+  
+  team_1 <- probable_pitchers$Team[i]
+  throws <- probable_pitchers$Throws[i]
+  
+  for(j in 1:nrow(handy)){
+    if(team_1 == handy$First_Team[j]) {team_2 = handy$Second_Team[j]}
+  }
+  
+  temp_df <- starting_players %>%
+    dplyr :: filter(Team == team_2)
+
+  if(throws == 'L'){
+    temp_df <- temp_df %>%
+      dplyr :: filter(LHP_Platoon != 'X')
+  }  
+  
+  if(throws == 'R'){
+    temp_df <- temp_df %>%
+      dplyr :: filter(RHP_Platoon != 'X')
+  }
+
+  temp_df2 <- rbind(temp_df, temp_df2)
+    
+  
+  }
+
+starting_players <- temp_df2
 
 
 #calculate starters WAR vs. total WAR from offensive players
@@ -156,7 +171,7 @@ write.csv(sched_probables, 'probables_bets.csv', row.names = FALSE)
 ##########################################################################################################3
 ##here we'll download the final lineups once they're set
 #need to import final lineups to set daily lineup
-url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-14'
+url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-15'
 page_lineups <- read_html(url_lineups)
 players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% html_text()
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
