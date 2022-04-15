@@ -22,9 +22,15 @@ colnames(Pitching_Data_2021_starters)[1] <- 'Name'
 steamer_hitting <- read.csv("~/GitHub/baseball model/steamerhitting2022_final.csv")
 colnames(steamer_hitting)[1] <- 'Name'
 
+#import files to deal with platooning players
+handy <- read.csv("~/GitHub/baseball model/schedules/handy.csv")
+colnames(handy)[1] <- 'First_Team'
+
+
 #import schedule for the day to input probable lineups and probable starters
 sched <- read.csv("~/GitHub/baseball model/schedules/MLB schedule.csv")
 sched_probables <- read.csv("~/GitHub/baseball model/schedules/MLB schedule.csv")
+
 
 #log5 calculation
 #this calculates probabilities of team A beating team B
@@ -34,18 +40,16 @@ log5 <- function(A,B){
 }
 
 #set lineup with probable pitchers and standard lineup
-url_probables <- 'https://www.mlb.com/probable-pitchers/2022-04-08'
-#read url into correct format
-page_probables <- read_html(url_probables)
-#turn page_probables into dataframe
-probables <- page_probables %>% html_nodes('.probable-pitchers__pitcher-name-link') %>% html_text()
-probable_pitchers <- data.frame(probables, stringsAsFactors = FALSE)
-colnames(probable_pitchers) <- c('Name')
+url_probables <- 'https://www.mlb.com/probable-pitchers'
+probables_lineups <- read_html(url_probables)
+probable_pitchers <- probables_lineups %>% html_nodes('.probable-pitchers__pitcher-name-link') %>% html_text()
+
 probable_pitchers <- data.frame(probable_pitchers, stringsAsFactors = FALSE)
+colnames(probable_pitchers) <- c('Name')
 
 #join probables dataframe with player data 
 probable_pitchers <- probable_pitchers %>% left_join(steamer_pitching, by = 'Name') %>%
-  dplyr :: select(c(Name, Team, ERA, WAR, GS, IP))
+  dplyr :: select(c(Name, Team, ERA, WAR, GS, IP, Throws))
 
 #mutate data to calculate how many runs a team would give up pitched by the probables
 probables_WAR <- probable_pitchers %>%
@@ -65,6 +69,26 @@ probables_WAR <- left_join(probables_WAR, pitching_sumWAR, by = 'Team') %>%
 starting_players <- steamer_hitting %>%
   dplyr :: filter(Starters == 'X') %>%
   dplyr :: select(c(Name, Team, adj_WAR))
+
+#for (i in 1:nrow(probable_pitchers)){
+  
+#  team_1 <- probable_pitchers$Team[i]
+#  throws <- probable_pitchers$Throws[i]
+  
+#  for (j in 1:nrow(handy)){
+#    if (team_1 == handy$First_Team[j]){
+#      team_2 = handy$Second_Team[j]
+#    }
+  
+#  for (k in 1:nrow(starting_players)){
+#    if (starting_players$Team[k] == team_2){
+      
+#    }
+#  }
+#  }
+#  }
+
+
 
 #calculate starters WAR vs. total WAR from offensive players
 starters_WAR <- starting_players %>%
@@ -132,7 +156,7 @@ write.csv(sched_probables, 'probables_bets.csv', row.names = FALSE)
 ##########################################################################################################3
 ##here we'll download the final lineups once they're set
 #need to import final lineups to set daily lineup
-url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-08'
+url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-14'
 page_lineups <- read_html(url_lineups)
 players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% html_text()
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
@@ -231,3 +255,4 @@ for(i in 1:nrow(sched)){
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
 write.csv(sched, 'today_bets.csv', row.names = FALSE)
+
