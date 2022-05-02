@@ -86,8 +86,10 @@ IndividualBatters_April$WAR_conversion <- IndividualBatters_April$PA / (PA_year 
 IndividualBatters_April$update_WAR <- ifelse(IndividualBatters_April$WAR_conversion > 1,IndividualBatters_April$WAR,IndividualBatters_April$WAR / IndividualBatters_April$WAR_conversion)
 
 #inner-join preseason prediction with update of April Batters
+IndividualBatters_April <- IndividualBatters_April %>%
+  select(c(Name, Team, percent_season, WAR_conversion, update_WAR))
 Batters_WAR_Update <- inner_join(steamerhitting2022_final, IndividualBatters_April, by = c('Name', 'Team')) %>%
-  dplyr :: select(c(Name, Team, adj_WAR, update_WAR, percent_season))
+  dplyr :: select(c(Name, Team, WAR, adj_WAR, update_WAR, percent_season))
 
 Batters_WAR_Update <- Batters_WAR_Update %>%
   dplyr :: mutate(adj_WAR = adj_WAR * (1-percent_season) + update_WAR * percent_season)
