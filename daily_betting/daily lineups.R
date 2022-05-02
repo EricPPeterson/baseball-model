@@ -4,33 +4,60 @@ library(dplyr)
 library(stringr)
 library(rvest)
 
+
 #import final predictions (use final_runs_scored, final_runs_surrendered for daily betting)
-final_prediction<- read.csv("~/GitHub/baseball model/daily_betting/final_prediction")
+final_prediction <- read.csv("~/GitHub/baseball model/Monthly Update/final_prediction_update.csv")
+final_prediction <- final_prediction %>%
+  select(c('Team', 'final_runs_scored_update', 'final_runs_surr_update'))
+colnames(final_prediction) <- c('Team', 'final_runs_scored', 'final_runs_surr')
 adjust <- final_prediction %>%
   select(Team, final_runs_scored, final_runs_surr)
 rm(final_prediction)
+
 UE_runs <- 1.0865
 relief <- 0.46309
 WAR <- 9
-HFA <- 0.00
+HFA <- 0.03
 full_season <- 162
-steamer_pitching <- read.csv("~/GitHub/baseball model/steamerpitching2022_final.csv", header=TRUE)
-colnames(steamer_pitching)[1] <- 'Name'
+
+steamer_pitching <- read.csv("~/GitHub/baseball model/Monthly Update/Pitchers_WAR_Update.csv")
 Pitching_Data_2021_starters <- read.csv("~/GitHub/baseball model/Pitching_Data_2021_starters.csv")
 Pitching_Data_2021_starters$Team <- sub("^$", "FA", Pitching_Data_2021_starters$Team)
 colnames(Pitching_Data_2021_starters)[1] <- 'Name'
-steamer_hitting <- read.csv("~/GitHub/baseball model/steamerhitting2022_final.csv")
-colnames(steamer_hitting)[1] <- 'Name'
-
-#import files to deal with platooning players
-handy <- read.csv("~/GitHub/baseball model/schedules/handy.csv")
-colnames(handy)[1] <- 'First_Team'
+steamer_hitting <- read.csv("~/GitHub/baseball model/Monthly Update/Batter_WAR_Update.csv")
 
 
 #import schedule for the day to input probable lineups and probable starters
-sched <- read.csv("~/GitHub/baseball model/schedules/MLB schedule.csv")
-sched_probables <- read.csv("~/GitHub/baseball model/schedules/MLB schedule.csv")
+home_teams <- data.frame(matrix(ncol = 1, nrow = 0))
+away_teams <- data.frame(matrix(ncol = 1, nrow = 0))
+url <- 'https://www.cbssports.com/mlb/schedule/'
+page <- read_html(url)
+today_sched <- page %>% html_nodes('.TeamName a') %>% html_text()
 
+today_sched <- data.frame(today_sched, stringsAsFactors = FALSE)
+colnames(today_sched) <- 'CBS_abbrev'
+
+#import cbs abbreviations
+cbs_sports_abbrev <- read.csv("~/GitHub/baseball model/schedules/cbs_sports_abbrev.csv")
+colnames(cbs_sports_abbrev)[1] <- 'CBS_abbrev'
+
+#join to change to correct abbreviations
+today_sched <- left_join(today_sched, cbs_sports_abbrev, by = 'CBS_abbrev') %>%
+  dplyr :: select(Team)
+
+row_odd <- seq_len(nrow(today_sched)) %% 2
+away_teams <- data.frame(today_sched[row_odd == 1,])
+colnames(away_teams) <- 'away_teams'
+home_teams <- data.frame(today_sched[row_odd == 0,])
+colnames(home_teams) <- 'home_teams'
+
+sched <- bind_cols(away_teams, home_teams)
+sched$away_team_win_pct <- NA
+sched$home_team_win_pct <- NA
+sched$away_team_game_win <- NA
+sched$home_team_game_win <- NA
+sched$away_team_odds <- NA
+sched$home_team_odds <- NA
 
 #log5 calculation
 #this calculates probabilities of team A beating team B
@@ -39,139 +66,21 @@ log5 <- function(A,B){
   return(Pa)
 }
 
-#set lineup with probable pitchers and standard lineup
-url_probables <- 'https://www.mlb.com/probable-pitchers'
-probables_lineups <- read_html(url_probables)
-probable_pitchers <- probables_lineups %>% html_nodes('.probable-pitchers__pitcher-name-link') %>% html_text()
-
-probable_pitchers <- data.frame(probable_pitchers, stringsAsFactors = FALSE)
-colnames(probable_pitchers) <- c('Name')
-
-#join probables dataframe with player data 
-probable_pitchers <- probable_pitchers %>% left_join(steamer_pitching, by = 'Name') %>%
-  dplyr :: select(c(Name, Team, ERA, WAR, GS, IP, Throws))
-
-#mutate data to calculate how many runs a team would give up pitched by the probables
-probables_WAR <- probable_pitchers %>%
-  dplyr :: mutate(annual_WAR = (full_season / GS) * WAR,) %>%
-  dplyr :: select(c(Name, Team, WAR, annual_WAR))
-
-pitching_sumWAR <- Pitching_Data_2021_starters %>%
-  dplyr :: group_by(Team) %>%
-  dplyr :: summarise(sumWAR = sum(WAR))
-
-probables_WAR <- left_join(probables_WAR, pitching_sumWAR, by = 'Team') %>%
-  dplyr :: select(c(Name, Team, annual_WAR, sumWAR)) %>%
-  dplyr :: mutate(WAR_diff = annual_WAR - sumWAR) %>%
-  dplyr :: mutate(run_diff = -WAR_diff * WAR)
-
-#filter down just to standard starters
-starting_players <- steamer_hitting %>%
-  dplyr :: filter(Starters == 'X') %>%
-  dplyr :: select(c(Name, Team, adj_WAR, LHP_Platoon, RHP_Platoon))
-
-temp_df <- data_frame(data.frame(matrix(ncol = 5, nrow = 0)))
-colnames(temp_df) <- colnames(starting_players)
-temp_df2 <- data_frame(data.frame(matrix(ncol = 5, nrow = 0)))
-colnames(temp_df) <- colnames(starting_players)
-
-for (i in 1:nrow(probable_pitchers)){
-  
-  team_1 <- probable_pitchers$Team[i]
-  throws <- probable_pitchers$Throws[i]
-  
-  for(j in 1:nrow(handy)){
-    if(team_1 == handy$First_Team[j]) {team_2 = handy$Second_Team[j]}
-  }
-  
-  temp_df <- starting_players %>%
-    dplyr :: filter(Team == team_2)
-
-  if(throws == 'L'){
-    temp_df <- temp_df %>%
-      dplyr :: filter(LHP_Platoon != 'X')
-  }  
-  
-  if(throws == 'R'){
-    temp_df <- temp_df %>%
-      dplyr :: filter(RHP_Platoon != 'X')
+#American Odds Calc
+American_Odds <- function(X){
+  if(X > 2){
+    output = (X - 1) * 100
+    } else {
+    output = -100 / (X- 1) 
+    }
+  return(output)
   }
 
-  temp_df2 <- rbind(temp_df, temp_df2)
-    
-  
-  }
-
-starting_players <- temp_df2
-
-
-#calculate starters WAR vs. total WAR from offensive players
-starters_WAR <- starting_players %>%
-  dplyr :: group_by(Team) %>%
-  dplyr :: summarise(sumWAR_daily = sum(adj_WAR))
-
-#total yearly war from offensive players
-yearly_WAR <- steamer_hitting %>%
-  dplyr :: group_by(Team) %>%
-  dplyr :: summarise(sumWAR_yearly = sum(WAR))
-
-#calculate total runs given up by a team that only starts the probable starter
-probables_WAR <- left_join(probables_WAR, adjust, by = 'Team') %>%
-  dplyr :: select(c(Team, final_runs_surr, run_diff)) %>%
-  dplyr :: mutate(adj_runs_surr = final_runs_surr + run_diff)
-
-#calculate total runs scored with standard starters
-starters_WAR <- left_join(starters_WAR, yearly_WAR, by = 'Team') %>%
-  dplyr :: select(c(Team, sumWAR_yearly, sumWAR_daily)) %>%
-  dplyr :: mutate(run_diff = (sumWAR_daily - sumWAR_yearly) * WAR)
-
-starters_WAR <- left_join(starters_WAR, adjust, by = 'Team') %>%
-  dplyr :: select(c(Team, final_runs_scored, run_diff)) %>%
-  dplyr :: mutate(off_runs_diff = final_runs_scored + run_diff)
-
-probables_adjustment <- left_join(probables_WAR, starters_WAR, by = 'Team') %>%
-  dplyr :: select(c(Team, off_runs_diff, adj_runs_surr)) %>%
-  dplyr :: mutate(adj_run_diff = off_runs_diff - adj_runs_surr)
-
-#win pct = 0.5000 + 0.0006281 * run_diff
-five_hundred <- .5000
-coef_win_pct <- 0.0006281
-probables_adjustment <- probables_adjustment %>%
-  mutate(win_pct = five_hundred + (coef_win_pct * adj_run_diff))
-
-#calcuate out daily odds of teams winning to place bets
-for(i in 1:nrow(sched_probables)){
-  
-  home_team <- sched_probables[i,1]
-  away_team <- sched_probables[i,7]
-  
-  if(home_team %in% probable_pitchers$Team == F || away_team %in% probable_pitchers$Team == F) next
-
-  home_team_win_pct <- probables_adjustment %>%
-    dplyr :: filter(Team == home_team) %>%
-    dplyr :: select(win_pct)
-  
-  away_team_win_pct <- probables_adjustment %>%
-    dplyr :: filter(Team == away_team) %>%
-    dplyr :: select(win_pct)
-
-  sched_probables[i,2] <- home_team_win_pct
-  sched_probables[i,8] <- away_team_win_pct
-  
-  sched_probables[i,3] <- log5(home_team_win_pct,away_team_win_pct) + HFA
-  sched_probables[i,9] <- 1 - sched_probables[i,3]
-  
-  sched_probables[i,4] <- 1/sched_probables[i,3]
-  sched_probables[i,10] <- 1/sched_probables[i,9]
-}
-
-setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
-write.csv(sched_probables, 'probables_bets.csv', row.names = FALSE)
 
 ##########################################################################################################3
 ##here we'll download the final lineups once they're set
 #need to import final lineups to set daily lineup
-url_lineups <- 'https://www.mlb.com/starting-lineups/2022-04-15'
+url_lineups <- 'https://www.mlb.com/starting-lineups/2022-05-01'
 page_lineups <- read_html(url_lineups)
 players <- page_lineups %>% html_nodes('.starting-lineups__player--link') %>% html_text()
 pitchers <- page_lineups %>% html_nodes('.starting-lineups__pitcher-name .starting-lineups__pitcher--link') %>% html_text()
@@ -181,15 +90,14 @@ colnames(starting_lineups) <- c('Name')
 starting_pitchers <- data.frame(pitchers, stringsAsFactors = FALSE)
 colnames(starting_pitchers) <- c('Name')
   
-
 starting_pitchers <- left_join(starting_pitchers, steamer_pitching, by = 'Name') %>%
-  select(c(Name, Team, ERA, WAR, GS, IP))
+  dplyr :: select(c(Name, Team, ERA, adj_WAR, GS, IP))
 
 starting_lineups <- left_join(starting_lineups, steamer_hitting, by = 'Name') %>%
   dplyr :: select(c(Name, Team, adj_WAR))
+
 starting_lineups <- starting_lineups %>%
   dplyr :: filter(is.na(Team) == F)
-
 
 starting_lineups <- starting_lineups %>%
   dplyr :: filter(WAR != 'NA')
@@ -209,8 +117,8 @@ daily_adjustment <- left_join(daily_WAR, yearly_WAR, by = 'Team') %>%
 
 #mutate data to calculate how many runs a team would give up pitched by the probables
 pitchers_WAR <- starting_pitchers %>%
-  dplyr :: mutate(annual_WAR = (full_season / GS) * WAR) %>%
-  dplyr :: select(c(Name, Team, WAR, annual_WAR))
+  dplyr :: mutate(annual_WAR = (full_season / GS) * adj_WAR) %>%
+  dplyr :: select(c(Name, Team, adj_WAR, annual_WAR))
 
 pitching_sumWAR <- Pitching_Data_2021_starters %>%
   dplyr :: group_by(Team) %>%
@@ -245,8 +153,8 @@ daily_adjustment <- daily_adjustment %>%
 
 
 for(i in 1:nrow(sched)){
-  home_team <- sched[i,1]
-  away_team <- sched[i,7]
+  home_team <- sched[i,2]
+  away_team <- sched[i,1]
   
   if(home_team %in% daily_adjustment$Team == F || away_team %in% daily_adjustment$Team == F) next
   
@@ -258,16 +166,19 @@ for(i in 1:nrow(sched)){
     dplyr :: filter(Team == away_team) %>%
     dplyr :: select(win_pct)
   
-  sched[i,2] <- home_team_win_pct
-  sched[i,8] <- away_team_win_pct
+  sched[i,4] <- home_team_win_pct
+  sched[i,3] <- away_team_win_pct
   
-  sched[i,3] <- log5(home_team_win_pct,away_team_win_pct) + HFA
-  sched[i,9] <- 1 - sched[i,3]
+  sched[i,6] <- log5(home_team_win_pct,away_team_win_pct) + HFA
+  sched[i,5] <- 1 - sched[i,6]
   
-  sched[i,4] <- 1/sched[i,3]
-  sched[i,10] <- 1/sched[i,9]
+  sched[i,8] <- 1/sched[i,6]
+  sched[i,7] <- 1/sched[i,5]
 }
+
 
 setwd("/Users/ericp/OneDrive/Documents/GitHub/baseball model/schedules")
 write.csv(sched, 'today_bets.csv', row.names = FALSE)
+
+starting_lineups %>% dplyr :: count(Team)
 
